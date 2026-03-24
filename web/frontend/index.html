@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Content Machine</h1>
+                        <span class="ml-2 text-sm text-gray-500">LangChain-powered Content Creation</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="checkHealth()" class="text-sm text-gray-600 hover:text-gray-900">
+                            Check Status
+                        </button>
+                        <span id="status-indicator" class="flex items-center">
+                            <span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                            <span class="text-sm text-gray-600">Unknown</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Content Creation Form -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Create New Content</h2>
+                
+                <form id="content-form" class="space-y-6">
+                    <!-- Topic -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Topic *
+                        </label>
+                        <input type="text" id="topic" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., Microservices Architecture Best Practices">
+                    </div>
+
+                    <!-- Keywords -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Keywords (comma-separated)
+                        </label>
+                        <input type="text" id="keywords"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., microservices, architecture, scalability, docker">
+                    </div>
+
+                    <!-- Target Platforms -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Target Platforms *
+                        </label>
+                        <div id="platforms" class="space-x-4">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Content Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Content Type *
+                        </label>
+                        <select id="content-type" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- Will be populated by JavaScript -->
+                        </select>
+                    </div>
+
+                    <!-- Additional Context -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Additional Context
+                        </label>
+                        <textarea id="additional-context" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Any specific requirements or context for this content..."></textarea>
+                    </div>
+
+                    <!-- Tone and Audience -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Tone
+                            </label>
+                            <select id="tone"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="professional">Professional</option>
+                                <option value="casual">Casual</option>
+                                <option value="technical">Technical</option>
+                                <option value="educational">Educational</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Target Audience
+                            </label>
+                            <input type="text" id="target-audience"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   value="tech professionals">
+                        </div>
+                    </div>
+
+                    <!-- Schedule Option -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="schedule-later" class="mr-2">
+                            <span class="text-sm text-gray-700">Schedule for later</span>
+                        </label>
+                        <div id="schedule-section" class="mt-2 hidden">
+                            <input type="datetime-local" id="scheduled-time"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Create Content
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Generated Content</h2>
+                    <div id="results-container" class="space-y-4">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div id="tasks-section" class="hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Scheduled Tasks</h2>
+                    <div id="tasks-container" class="space-y-2">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPlatforms();
+            loadContentTypes();
+            setupEventListeners();
+            checkHealth();
+        });
+
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('content-form').addEventListener('submit', handleCreateContent);
+            
+            // Schedule checkbox
+            document.getElementById('schedule-later').addEventListener('change', function() {
+                const scheduleSection = document.getElementById('schedule-section');
+                scheduleSection.classList.toggle('hidden', !this.checked);
+            });
+        }
+
+        async function loadPlatforms() {
+            try {
+                const response = await axios.get(`${API_BASE}/platforms`);
+                const platforms = response.data.platforms;
+                
+                const container = document.getElementById('platforms');
+                container.innerHTML = platforms.map(platform => `
+                    <label class="flex items-center">
+                        <input type="checkbox" name="platforms" value="${platform.value}" class="mr-2">
+                        <span class="text-sm text-gray-700">${platform.name}</span>
+                    </label>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading platforms:', error);
+            }
+        }
+
+        async function loadContentTypes() {
+            try {
+                const response = await axios.get(`${API_BASE}/content-types`);
+                const contentTypes = response.data.content_types;
+                
+                const select = document.getElementById('content-type');
+                select.innerHTML = contentTypes.map(type => `
+                    <option value="${type.value}">${type.name}</option>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading content types:', error);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await axios.get(`${API_BASE}/health`);
+                updateStatusIndicator('healthy', 'Connected');
+            } catch (error) {
+                updateStatusIndicator('unhealthy', 'Disconnected');
+            }
+        }
+
+        function updateStatusIndicator(status, text) {
+            const indicator = document.getElementById('status-indicator');
+            const colorClass = status === 'healthy' ? 'bg-green-400' : 'bg-red-400';
+            indicator.innerHTML = `
+                <span class="w-2 h-2 ${colorClass} rounded-full mr-2"></span>
+                <span class="text-sm text-gray-600">${text}</span>
+            `;
+        }
+
+        async function handleCreateContent(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const platforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked'))
+                .map(cb => cb.value);
+            
+            if (platforms.length === 0) {
+                alert('Please select at least one platform');
+                return;
+            }
+
+            const requestData = {
+                topic: formData.get('topic'),
+                keywords: formData.get('keywords').split(',').map(k => k.trim()).filter(k => k),
+                target_platforms: platforms,
+                content_type: formData.get('content-type'),
+                additional_context: formData.get('additional-context') || null,
+                tone: formData.get('tone'),
+                target_audience: formData.get('target-audience')
+            };
+
+            // Add scheduled time if specified
+            if (document.getElementById('schedule-later').checked) {
+                const scheduledTime = document.getElementById('scheduled-time').value;
+                if (scheduledTime) {
+                    requestData.scheduled_time = new Date(scheduledTime).toISOString();
+                }
+            }
+
+            try {
+                const response = await axios.post(`${API_BASE}/content/create`, requestData);
+                displayResults(response.data);
+                
+                if (requestData.scheduled_time) {
+                    showTasks();
+                }
+            } catch (error) {
+                console.error('Error creating content:', error);
+                alert('Error creating content: ' + (error.response?.data?.detail || error.message));
+            }
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results-section');
+            const resultsContainer = document.getElementById('results-container');
+            
+            if (data.success) {
+                if (data.content_pieces) {
+                    resultsContainer.innerHTML = data.content_pieces.map(piece => `
+                        <div class="border rounded-lg p-4 fade-in">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-gray-900">${piece.input_data.topic}</h3>
+                                <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    ${piece.platform}
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <p><strong>Status:</strong> ${piece.status}</p>
+                                <p><strong>Content Type:</strong> ${piece.input_data.content_type}</p>
+                                ${piece.reviewed_content ? `
+                                    <p><strong>Quality Score:</strong> ${piece.reviewed_content.quality_score}/10</p>
+                                ` : ''}
+                            </div>
+                            ${piece.reviewed_content ? `
+                                <div class="mt-3 p-3 bg-gray-50 rounded text-sm">
+                                    <p class="font-medium mb-1">Content Preview:</p>
+                                    <p class="text-gray-700">${piece.reviewed_content.final_content.substring(0, 200)}...</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else if (data.task_id) {
+                    resultsContainer.innerHTML = `
+                        <div class="border rounded-lg p-4 fade-in">
+                            <h3 class="font-semibold text-gray-900 mb-2">Content Scheduled</h3>
+                            <p class="text-sm text-gray-600">Task ID: ${data.task_id}</p>
+                            <p class="text-sm text-gray-600">Scheduled for: ${data.scheduled_time}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+                        <p class="text-red-800">Error: ${data.error}</p>
+                    </div>
+                `;
+            }
+            
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function showTasks() {
+            try {
+                const response = await axios.get(`${API_BASE}/tasks`);
+                const tasksSection = document.getElementById('tasks-section');
+                const tasksContainer = document.getElementById('tasks-container');
+                
+                const activeTasks = response.data.active_tasks || {};
+                const scheduledTasks = response.data.scheduled_tasks || {};
+                
+                let tasksHtml = '';
+                
+                // Display active tasks
+                Object.entries(activeTasks).forEach(([worker, tasks]) => {
+                    tasks.forEach(task => {
+                        tasksHtml += `
+                            <div class="flex justify-between items-center p-2 border rounded">
+                                <span class="text-sm">${task.name}</span>
+                                <span class="text-xs text-blue-600">Active</span>
+                            </div>
+                        `;
+                    });
+                });
+                
+                // Display scheduled tasks
+                Object.entries(scheduledTasks).forEach(([worker, tasks]) => {
+                    tasks.forEach(task => {
+                        tasksHtml += `
+                            <div class="flex justify-between items-center p-2 border rounded">
+                                <span class="text-sm">${task.name}</span>
+                                <span class="text-xs text-yellow-600">Scheduled</span>
+                            </div>
+                        `;
+                    });
+                });
+                
+                if (!tasksHtml) {
+                    tasksHtml = '<p class="text-sm text-gray-500">No active or scheduled tasks</p>';
+                }
+                
+                tasksContainer.innerHTML = tasksHtml;
+                tasksSection.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+    </script>
+</body>
+</html>
