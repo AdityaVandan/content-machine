@@ -1,0 +1,6 @@
+.env
+drafts/*.md
+reviewed/*.md
+__pycache__/
+*.pyc
+.DS_Store
